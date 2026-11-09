@@ -19,10 +19,26 @@
  */
 
 int main (string[] args) {
+#if BAOBAB_WINDOWS
+    // GLib resolves this from the executable, including paths containing Unicode.
+    var prefix = GLib.Win32.get_package_installation_directory_of_module (null);
+    var share = Path.build_filename (prefix, "share");
+    var schemas = Path.build_filename (share, "glib-2.0", "schemas");
+    if (FileUtils.test (Path.build_filename (schemas, "gschemas.compiled"), FileTest.EXISTS)) {
+        Environment.set_variable ("GSETTINGS_SCHEMA_DIR", schemas, true);
+        Environment.set_variable ("XDG_DATA_DIRS", share, true);
+    }
+    Intl.bindtextdomain (Config.GETTEXT_PACKAGE, Path.build_filename (share, "locale"));
+#else
     Intl.bindtextdomain (Config.GETTEXT_PACKAGE, Config.GNOMELOCALEDIR);
+#endif
     Intl.bind_textdomain_codeset (Config.GETTEXT_PACKAGE, "UTF-8");
     Intl.textdomain (Config.GETTEXT_PACKAGE);
 
     var baobab = new Baobab.Application ();
+#if BAOBAB_WINDOWS
+    return baobab.run (GLib.Win32.get_command_line ());
+#else
     return baobab.run (args);
+#endif
 }

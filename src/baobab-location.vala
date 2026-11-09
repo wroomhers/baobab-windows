@@ -98,6 +98,14 @@ namespace Baobab {
         }
 
         public Location.for_main_volume () {
+#if BAOBAB_WINDOWS
+            name = Environment.get_host_name ();
+            var home = File.new_for_path (Environment.get_home_dir ());
+            while (home.get_parent () != null) {
+                home = home.get_parent ();
+            }
+            file = home;
+#else
             try {
                 name = get_hostname ();
             } catch (Error e) {
@@ -109,6 +117,7 @@ namespace Baobab {
             }
 
             file = File.new_for_path ("/");
+#endif
             icon = new ThemedIcon.with_default_fallbacks ("drive-harddisk-system");
             symbolic_icon = new ThemedIcon.with_default_fallbacks ("drive-harddisk-system-symbolic");
             is_main_volume = true;

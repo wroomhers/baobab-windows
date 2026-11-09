@@ -158,11 +158,12 @@ namespace Baobab {
 
             set_ui_state (home_page, false);
 
+#if !BAOBAB_WINDOWS
             focus_controller.enter.connect (() => {
                 application.withdraw_notification ("scan-completed");
             });
+#endif
 
-            present ();
         }
 
         void on_show_primary_menu_activate (SimpleAction action) {
@@ -647,11 +648,13 @@ namespace Baobab {
 
             banner.revealed = !scanner.show_allocated_size;
 
+#if !BAOBAB_WINDOWS
             if (!is_active) {
                 var notification = new Notification(_("Scan completed"));
                 notification.set_body (_("Completed scan of “%s”").printf (scanner.directory.get_parse_name ()));
                 get_application ().send_notification ("scan-completed", notification);
             }
+#endif
         }
 
         void scan_location (Location location, bool force = false) {

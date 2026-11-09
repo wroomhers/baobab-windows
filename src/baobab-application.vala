@@ -47,7 +47,11 @@ namespace Baobab {
         protected override void open (File[] files, string hint) {
             ensure_window ();
 
+#if BAOBAB_WINDOWS
+            var scan_flags = ScanFlags.NONE;
+#else
             var scan_flags = all_file_systems ? ScanFlags.NONE : ScanFlags.EXCLUDE_MOUNTS;
+#endif
             window.scan_directory (files[0], scan_flags);
         }
 
@@ -55,6 +59,8 @@ namespace Baobab {
             if (window == null) {
                 window = new Window (this);
             }
+
+            window.present ();
         }
 
         public static new Application get_default () {
@@ -93,7 +99,11 @@ namespace Baobab {
         }
 
         public Application () {
+#if BAOBAB_WINDOWS
+            Object (application_id: "org.gnome.baobab", flags: ApplicationFlags.HANDLES_OPEN | ApplicationFlags.NON_UNIQUE);
+#else
             Object (application_id: "org.gnome.baobab", flags: ApplicationFlags.HANDLES_OPEN);
+#endif
 
             set_resource_base_path("/org/gnome/baobab/");
 

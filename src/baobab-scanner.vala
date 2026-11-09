@@ -144,6 +144,7 @@ namespace Baobab {
         [Compact]
         class ResultsArray {
             internal Results[] results;
+            internal Error? error;
         }
 
         public class Results : Object {
@@ -297,7 +298,8 @@ namespace Baobab {
             var results_array = new ResultsArray ();
 
             var current_unix_device = info.get_attribute_uint32 (FileAttribute.UNIX_DEVICE);
-            if (ScanFlags.EXCLUDE_MOUNTS in scan_flags && current_unix_device != unix_device) {
+            if (info.has_attribute (FileAttribute.UNIX_DEVICE) &&
+                ScanFlags.EXCLUDE_MOUNTS in scan_flags && current_unix_device != unix_device) {
                 return null;
             }
 
@@ -347,6 +349,11 @@ namespace Baobab {
                 array.results += (owned) results;
                 results_queue.push ((owned) array);
             } catch (Error e) {
+                // Publish failures through the same synchronized queue as results.
+                // An empty queue is not evidence that the worker has finished.
+                var array = new ResultsArray ();
+                array.error = e;
+                results_queue.push ((owned) array);
             }
 
             // drop the thread's reference on the Scanner object
@@ -362,12 +369,18 @@ namespace Baobab {
                     break;
                 }
 
+                if (results_array.error != null) {
+                    scan_error = (owned) results_array.error;
+                    process_result_idle = 0;
+                    completed ();
+                    return false;
+                }
+
                 foreach (unowned Results results in results_array.results) {
                     if (results.parent != null) {
                         results.parent.children_list_store.insert (0, results);
                     }
 
-                    State state;
                     if (results.child_error) {
                         results.state = State.CHILD_ERROR;
                     } else if (results.error != null) {
@@ -385,13 +398,14 @@ namespace Baobab {
                         this.root = results;
                         scan_error = results.error;
                         successful = true;
+                        process_result_idle = 0;
                         completed ();
                         return false;
                     }
                 }
             }
 
-            return this.self != null;
+            return true;
         }
 
         void cancel_and_reset () {
@@ -417,6 +431,9 @@ namespace Baobab {
 
             cancellable.reset ();
             scan_error = null;
+            root = null;
+            max_depth = 0;
+            show_allocated_size = false;
             total_size = 0;
             total_elements = 0;
 
@@ -436,13 +453,7 @@ namespace Baobab {
 
                 thread = new Thread<void*> ("scanner", scan_in_thread);
 
-                process_result_idle = Timeout.add (100, () => {
-                        bool res = process_results();
-                        if (!res) {
-                            process_result_idle = 0;
-                        }
-                        return res;
-                    });
+                process_result_idle = Timeout.add (100, process_results);
             } else {
                 completed ();
             }

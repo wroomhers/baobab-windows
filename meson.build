@@ -25,10 +25,14 @@ conf.set_quoted('GNOMELOCALEDIR', join_paths(get_option('prefix'), get_option('l
 configure_file(output: 'config.h', configuration: conf)
 config_h_dir = include_directories('.')
 
+if host_machine.system() == 'windows'
+  add_project_arguments('--define=BAOBAB_WINDOWS', language: 'vala')
+endif
+
 gnome.post_install(
   glib_compile_schemas: true,
   gtk_update_icon_cache: true,
-  update_desktop_database: true,
+  update_desktop_database: host_machine.system() != 'windows',
 )
 
 add_project_arguments(
@@ -40,3 +44,4 @@ subdir('data')
 subdir('help')
 subdir('po')
 subdir('src')
+subdir('tests')

@@ -1,4 +1,6 @@
 build
+dist/
+baobab-start.log
 *.swp
 *~
 _build/

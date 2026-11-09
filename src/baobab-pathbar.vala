@@ -117,7 +117,7 @@ namespace Baobab {
                 bool is_current_dir = true;
                 do {
                     buttons.prepend (make_button (path_tmp, is_current_dir));
-                    path_tmp = path_tmp.parent;
+                    path_tmp = path_tmp != null ? path_tmp.parent : null;
                     is_current_dir = false;
                 } while (path_tmp != null);
 
